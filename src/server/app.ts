@@ -34,7 +34,7 @@ export async function startApp(opts: ServiceOptions & { port?: number; host?: st
     // CSRF / DNS-rebinding guard: browsers must come from the same origin.
     const origin = req.headers.origin;
     if (origin && MUTATING.has(req.method)) {
-      let ok = false;
+      let ok: boolean;
       try {
         ok = new URL(origin).host === req.headers.host;
       } catch {

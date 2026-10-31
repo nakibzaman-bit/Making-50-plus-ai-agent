@@ -141,7 +141,7 @@ export class MergeQueue {
   private async step(mr: MergeRequest, step: MergeStep, fn: () => Promise<string | { skip: string }>): Promise<MergeRequest> {
     const t0 = Date.now();
     mr = this.setCheck(mr, step, 'running');
-    this.core.logs.line(mr.projectId, mr.agentId, mr.taskId, 'system', `⛓ merge check: ${step}`);
+    this.core.logs.line(mr.projectId, mr.agentId, mr.taskId, 'system', `› merge check: ${step}`);
     try {
       const out = await fn();
       if (typeof out === 'object') return this.setCheck(mr, step, 'skipped', out.skip, Date.now() - t0);
@@ -244,7 +244,7 @@ export class MergeQueue {
       const info = (await this.core.git.log(project.repoPath, 'main', 1))[0];
       if (info) this.core.bus.emit({ type: 'git.commit', projectId: project.id, agentId: null, branch: 'main', commit: { ...info, branch: 'main' } });
       this.core.bus.emit({ type: 'git.branch', projectId: project.id, agentId: mr.agentId, branch: mr.branch, action: 'merged' });
-      this.core.logs.line(project.id, mr.agentId, mr.taskId, 'system', `⛙ Merged ${mr.branch} into main at ${commit.slice(0, 7)}`);
+      this.core.logs.line(project.id, mr.agentId, mr.taskId, 'system', `⇢ Merged ${mr.branch} into main at ${commit.slice(0, 7)}`);
       await this.hooks?.onMerged(mr);
     } catch (e) {
       const failure = e instanceof StepFailure ? e : new StepFailure('merge', (e as Error).message);

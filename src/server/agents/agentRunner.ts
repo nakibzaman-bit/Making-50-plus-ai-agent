@@ -132,7 +132,6 @@ export class AgentRunner {
     const control = new Control();
     this.controls.set(agentIn.id, control);
     const project = this.projects.get(agentIn.projectId);
-    const role = this.roles.get(agentIn.roleId);
     const startedAt = Date.now();
     let agent = this.agents.update(agentIn.id, { status: 'working', statusReason: null, currentTaskId: taskIn.id, startedAt: agentIn.startedAt ?? startedAt });
     let task = this.tasks.setStatus(taskIn.id, 'working', { assignedAgentId: agent.id, branch: agent.branch, attempts: taskIn.attempts + 1, error: null });

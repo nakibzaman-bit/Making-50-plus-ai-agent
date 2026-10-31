@@ -362,7 +362,7 @@ export class Orchestrator implements RunnerHooks, MergeHooks {
   async onMerged(mr: MergeRequest) {
     const task = mr.taskId ? this.core.repos.tasks.get(mr.taskId) : undefined;
     const agent = this.agents.find(mr.agentId);
-    this.messages.system(mr.projectId, `⛙ Merged ${mr.branch} into main${mr.mergedCommit ? ` (${mr.mergedCommit.slice(0, 7)})` : ''}`, { fromAgentId: mr.agentId, taskId: mr.taskId, meta: { event: 'merged', commit: mr.mergedCommit } });
+    this.messages.system(mr.projectId, `⇢ Merged ${mr.branch} into main${mr.mergedCommit ? ` (${mr.mergedCommit.slice(0, 7)})` : ''}`, { fromAgentId: mr.agentId, taskId: mr.taskId, meta: { event: 'merged', commit: mr.mergedCommit } });
     if (task) this.completeTask(task, agent, task.result ?? 'Merged');
     else if (agent) this.agents.setStatus(agent.id, 'completed', null);
   }

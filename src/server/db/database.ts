@@ -71,7 +71,7 @@ export class Db {
         this.raw.exec('COMMIT');
       } catch (e) {
         this.raw.exec('ROLLBACK');
-        throw new Error(`Migration ${m.version} failed: ${(e as Error).message}`);
+        throw new Error(`Migration ${m.version} failed: ${(e as Error).message}`, { cause: e });
       }
     }
   }

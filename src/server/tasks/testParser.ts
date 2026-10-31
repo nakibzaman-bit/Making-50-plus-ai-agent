@@ -1,5 +1,6 @@
 /** Extract pass/fail counts from common test runner output (node:test, vitest, jest, mocha, pytest, cargo, go). */
 export function parseTestOutput(output: string): { passed: number; failed: number } | null {
+  // eslint-disable-next-line no-control-regex
   const text = output.replace(/\u001b\[[0-9;]*m/g, '');
   let m: RegExpMatchArray | null;
   // node --test (TAP summary): "# pass 5" / "# fail 1"  or spec reporter "ℹ pass 5"

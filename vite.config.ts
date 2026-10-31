@@ -14,9 +14,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('three') || id.includes('@react-three')) return 'three';
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
+          if (/node_modules\/(three|three-stdlib|@react-three|troika|meshline|camera-controls|maath|stats)/.test(id)) return 'three';
           if (id.includes('@xyflow')) return 'flow';
-          if (id.includes('node_modules')) return 'vendor';
           return undefined;
         },
       },

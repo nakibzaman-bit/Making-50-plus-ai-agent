@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.nexus/
+.env
+*.log
+e2e/artifacts/
+tests/.tmp/

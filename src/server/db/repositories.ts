@@ -155,7 +155,7 @@ export class TaskTable {
 
   constructor(private db: Db) {
     this.t = new Table<TaskRow>(db, 'tasks', {
-      id: ['id'], projectId: ['project_id'], title: ['title'], description: ['description'], priority: ['priority'],
+      id: ['id'], projectId: ['project_id'], title: ['title'], description: ['description'], kind: ['kind'], fixesTaskId: ['fixes_task_id'], priority: ['priority'],
       status: ['status'], assignedAgentId: ['assigned_agent_id'], roleHint: ['role_hint'], branch: ['branch'],
       script: ['script', 'json'], recovery: ['recovery', 'json'], requiresApproval: ['requires_approval', 'bool'],
       attempts: ['attempts'], maxAttempts: ['max_attempts'], files: ['files', 'json'], tests: ['tests', 'json'],

@@ -81,8 +81,16 @@ export class CpuMeter {
 }
 
 let lastHost: { idle: number; total: number } | null = null;
+let cached = { at: 0, value: 0 };
 
+/** Host CPU% since the previous sample (cached for 500 ms so concurrent callers agree). */
 export function hostCpuPercent(): number {
+  if (Date.now() - cached.at < 500) return cached.value;
+  cached = { at: Date.now(), value: sampleHostCpu() };
+  return cached.value;
+}
+
+function sampleHostCpu(): number {
   const cpus = os.cpus();
   let idle = 0;
   let total = 0;

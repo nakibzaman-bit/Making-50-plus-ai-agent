@@ -164,13 +164,21 @@ export interface TestSummary {
   failed: number;
   command: string;
   at: number;
+  ok: boolean;
+  /** Commit the tests ran against (lets the merge queue reuse verified results). */
+  head: string | null;
 }
+
+export type TaskKind = 'work' | 'debug' | 'conflict' | 'review';
 
 export interface Task {
   id: string;
   projectId: string;
   title: string;
   description: string;
+  kind: TaskKind;
+  /** For debug/conflict tasks: the task this one repairs. */
+  fixesTaskId: string | null;
   priority: number;
   status: TaskStatus;
   assignedAgentId: string | null;

@@ -156,11 +156,11 @@ const SEEDS: RoleSeed[] = [
   { id: 'research', name: 'Research Agent', icon: '🔭', color: '#93c5fd', kind: 'reader', priority: 4,
     description: 'Investigates options, prior art and libraries; writes findings.',
     focus: 'Investigate options and summarise trade-offs with a clear recommendation.',
-    capabilities: ['research', 'analysis'], taskTypes: ['research'], extraPermissions: ['fs.write', 'git.commit'] },
+    capabilities: ['research', 'analysis'], taskTypes: ['research'], extraPermissions: ['fs.write', 'git.commit', 'merge.request'] },
   { id: 'marketing', name: 'Marketing Agent', icon: '📣', color: '#fda4af', kind: 'reader', priority: 2,
     description: 'Writes product copy, release notes and landing content.',
     focus: 'Write clear, honest product copy and release notes from the actual feature set.',
-    capabilities: ['copywriting', 'release-notes'], taskTypes: ['marketing', 'copy'], extraPermissions: ['fs.write', 'git.commit'] },
+    capabilities: ['copywriting', 'release-notes'], taskTypes: ['marketing', 'copy'], extraPermissions: ['fs.write', 'git.commit', 'merge.request'] },
 ];
 
 function build(seed: RoleSeed): RoleDefinition {

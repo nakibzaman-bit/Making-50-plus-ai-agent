@@ -152,6 +152,13 @@ export class GitService {
     return { ok: true, conflicts: [], updated: (await this.head(worktree)) !== before };
   }
 
+  /** Merge base into the worktree and LEAVE conflict markers for an agent to resolve. */
+  async mergeBaseKeepConflicts(worktree: string, authorName: string, base = this.base): Promise<string[]> {
+    const r = await this.exec(worktree, ['merge', '--no-edit', base], { allowFail: true, env: this.authorEnv(authorName) });
+    if (r.code === 0) return [];
+    return (await this.exec(worktree, ['diff', '--name-only', '--diff-filter=U'], { allowFail: true })).stdout.split('\n').filter(Boolean);
+  }
+
   /** Stage everything and commit as the agent. Returns null if there was nothing to commit. */
   async commitAll(worktree: string, message: string, authorName: string): Promise<CommitInfo | null> {
     await this.exec(worktree, ['add', '-A']);

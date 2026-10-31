@@ -83,6 +83,8 @@ CREATE TABLE tasks (
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL DEFAULT 'work',
+  fixes_task_id TEXT,
   priority INTEGER NOT NULL DEFAULT 5,
   status TEXT NOT NULL,
   assigned_agent_id TEXT,

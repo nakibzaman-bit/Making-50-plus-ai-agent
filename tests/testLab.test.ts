@@ -10,11 +10,11 @@ const s = createServices({ config: { dataDir: tmpDir(), tickMs: 100, anthropicAp
 afterAll(() => s.close());
 
 describe('NEXUS TEST LAB (full real run)', () => {
-  it('runs 20+ agents to completion with retries, a debugger, approvals and merges', async () => {
+  it('runs 50+ agents to completion with retries, a debugger, approvals and merges', async () => {
     const pid = await seedTestLab(s);
-    expect(s.agents.list(pid).length).toBeGreaterThanOrEqual(22);
+    expect(s.agents.list(pid).length).toBeGreaterThanOrEqual(54);
     const teams = s.teams.list(pid);
-    expect(teams.length).toBe(5);
+    expect(teams.length).toBe(7);
     // every non-orchestrator agent has its own real worktree on its own branch
     for (const a of s.agents.list(pid).filter((a) => a.roleId !== 'orchestrator')) {
       expect(fs.existsSync(path.join(a.workspacePath!, '.git'))).toBe(true);
@@ -45,14 +45,15 @@ describe('NEXUS TEST LAB (full real run)', () => {
 
     // Everything landed on main and the merged toolkit's test suite passes for real.
     const repo = project.repoPath;
-    for (const f of ['src/ui/easing.js', 'src/ai/eval.js', 'src/auth/token.js', 'tests/integration.test.js', 'scripts/build.js', 'README.md'])
+    for (const f of ['src/ui/easing.js', 'src/ai/eval.js', 'src/auth/token.js', 'src/sim/integrator.js', 'src/sim/timeline.js', 'src/data/csv.js', 'tests/integration.test.js', 'tests/regression.test.js', 'scripts/build.js', 'scripts/scan-secrets.js', 'CHANGELOG.md', 'README.md'])
       expect(fs.existsSync(path.join(repo, f)), f).toBe(true);
     expect(fs.readFileSync(path.join(repo, 'src/ui/easing.js'), 'utf8')).toContain('-1 + (4 - 2 * t) * t');
-    const out = execFileSync('node', ['--test'], { cwd: repo, encoding: 'utf8' });
+    const out = execFileSync('npm', ['test'], { cwd: repo, encoding: 'utf8' });
     expect(out).toMatch(/# fail 0/);
 
     const merged = s.merges.list(pid).filter((m) => m.status === 'merged');
-    expect(merged.length).toBeGreaterThanOrEqual(18);
+    expect(merged.length).toBeGreaterThanOrEqual(50);
+    expect(s.agents.list(pid).length).toBeGreaterThanOrEqual(55); // incl. the auto-spawned debugger
     const msgs = s.messages.list(pid, 1000).map((m) => m.body);
     expect(msgs.some((m) => /Endpoint \/users\/:id implemented\. Commit [0-9a-f]{7}/.test(m))).toBe(true);
     expect(msgs.some((m) => /Objective complete/.test(m))).toBe(true);

@@ -49,8 +49,8 @@ try {
     await p.getByTestId('intro').waitFor({ state: 'detached', timeout: 5000 });
   });
 
-  await check('test lab loads with 20+ agents on the canvas', async (p) => {
-    await p.waitForFunction(() => document.querySelectorAll('.react-flow__node-agent').length >= 22);
+  await check('test lab loads with 50+ agents on the canvas', async (p) => {
+    await p.waitForFunction(() => document.querySelectorAll('.react-flow__node-agent').length >= 50);
     assert.match(await p.getByTestId('project-switcher').innerText(), /NEXUS TEST LAB/);
     assert.match(await p.getByTestId('command-center').innerText(), /ACTIVE AGENTS/i);
   });
@@ -117,7 +117,7 @@ try {
     await p.getByLabel('Back to 2D canvas').click();
     await p.getByRole('radio', { name: 'DEMO' }).click();
     await p.getByTestId('demo-banner').waitFor();
-    await p.waitForFunction(() => document.querySelectorAll('.react-flow__node-agent').length >= 35);
+    await p.waitForFunction(() => document.querySelectorAll('.react-flow__node-agent').length >= 55);
     await p.getByRole('radio', { name: 'LIVE' }).click();
     await p.getByTestId('demo-banner').waitFor({ state: 'detached' });
   });

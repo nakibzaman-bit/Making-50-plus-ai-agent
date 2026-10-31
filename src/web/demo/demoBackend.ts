@@ -32,12 +32,13 @@ let nextId = 1;
 const uid = (p: string) => `${p}_demo${nextId++}`;
 
 const TEAMS: { name: string; lead: [string, string]; members: [string, string][] }[] = [
-  { name: 'Product', lead: ['project-manager', 'Product Manager'], members: [['research', 'Research Agent'], ['docs', 'Documentation Agent'], ['marketing', 'Marketing Agent']] },
-  { name: 'Frontend', lead: ['team-lead', 'Frontend Lead'], members: [['frontend', 'UI Agent'], ['animation', 'Animation Agent'], ['designer', 'Accessibility Agent'], ['frontend', 'Dashboard Agent'], ['3d', '3D Viewer Agent'], ['graphics', 'Shader Agent']] },
-  { name: 'Backend', lead: ['team-lead', 'Backend Lead'], members: [['api', 'API Agent'], ['database', 'Database Agent'], ['backend', 'Auth Agent'], ['backend', 'Payments Agent'], ['backend', 'Search Agent'], ['security', 'Security Agent']] },
-  { name: 'AI', lead: ['ai', 'AI Lead'], members: [['ai', 'Agent Runtime'], ['ml', 'Ranking Model'], ['ml', 'Embeddings Agent'], ['ai', 'Evaluation Agent'], ['ai', 'Prompt Engineer']] },
-  { name: 'Platform', lead: ['devops', 'Platform Lead'], members: [['cloud', 'Cloud Agent'], ['devops', 'CI Agent'], ['performance', 'Performance Agent'], ['devops', 'Release Agent']] },
-  { name: 'Quality', lead: ['qa', 'QA Lead'], members: [['test', 'Unit Test Agent'], ['test', 'E2E Test Agent'], ['reviewer', 'Code Reviewer'], ['debugger', 'Debugger'], ['qa', 'Regression Agent'], ['reviewer', 'Security Reviewer']] },
+  { name: 'Product', lead: ['project-manager', 'Product Manager'], members: [['research', 'Research Agent'], ['docs', 'Documentation Agent'], ['marketing', 'Marketing Agent'], ['research', 'Market Research'], ['docs', 'API Docs Agent']] },
+  { name: 'Frontend', lead: ['team-lead', 'Frontend Lead'], members: [['frontend', 'UI Agent'], ['animation', 'Animation Agent'], ['designer', 'Accessibility Agent'], ['frontend', 'Dashboard Agent'], ['3d', '3D Viewer Agent'], ['graphics', 'Shader Agent'], ['frontend', 'Checkout UI Agent'], ['designer', 'Design System Agent']] },
+  { name: 'Backend', lead: ['team-lead', 'Backend Lead'], members: [['api', 'API Agent'], ['database', 'Database Agent'], ['backend', 'Auth Agent'], ['backend', 'Payments Agent'], ['backend', 'Search Agent'], ['security', 'Security Agent'], ['api', 'GraphQL Agent'], ['database', 'Migrations Agent'], ['backend', 'Notifications Agent']] },
+  { name: 'AI', lead: ['ai', 'AI Lead'], members: [['ai', 'Agent Runtime'], ['ml', 'Ranking Model'], ['ml', 'Embeddings Agent'], ['ai', 'Evaluation Agent'], ['ai', 'Prompt Engineer'], ['ml', 'Recommendations Agent'], ['ai', 'Guardrails Agent']] },
+  { name: 'Platform', lead: ['devops', 'Platform Lead'], members: [['cloud', 'Cloud Agent'], ['devops', 'CI Agent'], ['performance', 'Performance Agent'], ['devops', 'Release Agent'], ['cloud', 'CDN Agent'], ['devops', 'Observability Agent']] },
+  { name: 'Quality', lead: ['qa', 'QA Lead'], members: [['test', 'Unit Test Agent'], ['test', 'E2E Test Agent'], ['reviewer', 'Code Reviewer'], ['debugger', 'Debugger'], ['qa', 'Regression Agent'], ['reviewer', 'Security Reviewer'], ['test', 'Load Test Agent'], ['qa', 'Accessibility QA']] },
+  { name: 'Mobile', lead: ['team-lead', 'Mobile Lead'], members: [['frontend', 'iOS Agent'], ['frontend', 'Android Agent'], ['designer', 'Mobile UX Agent'], ['backend', 'Sync Agent'], ['test', 'Device Test Agent'], ['devops', 'App Store Agent']] },
 ];
 
 const COMMANDS = ['npm run build', 'npm test', 'npx tsc --noEmit', 'npm run lint', 'git status', 'node scripts/migrate.js', 'npx vitest run src/'];

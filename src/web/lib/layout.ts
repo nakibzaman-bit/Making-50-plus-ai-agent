@@ -5,6 +5,8 @@ export const NODE_H = 196;
 const HGAP = 36;
 const VGAP = 84;
 const GRID_THRESHOLD = 5;
+/** Wider child rows wrap onto additional rows so large workforces stay roughly screen-shaped. */
+const MAX_ROW_W = 3200;
 
 interface TreeNode {
   id: string;
@@ -13,6 +15,7 @@ interface TreeNode {
   h: number;
   grid: boolean;
   cols: number;
+  rows: { items: TreeNode[]; w: number; h: number }[];
 }
 
 /** Agents hidden because their team is collapsed (the lead stays visible). */
@@ -48,11 +51,21 @@ export function layoutAgents(agents: Agent[], teams: Record<string, Team>): Map<
     if (allLeaves) {
       const cols = Math.min(4, Math.ceil(Math.sqrt(children.length * 1.4)));
       const rows = Math.ceil(children.length / cols);
-      return { id: a.id, children, grid: true, cols, w: Math.max(NODE_W, cols * NODE_W + (cols - 1) * HGAP), h: NODE_H + VGAP + rows * NODE_H + (rows - 1) * (HGAP + 8) };
+      return { id: a.id, children, grid: true, cols, rows: [], w: Math.max(NODE_W, cols * NODE_W + (cols - 1) * HGAP), h: NODE_H + VGAP + rows * NODE_H + (rows - 1) * (HGAP + 8) };
     }
-    const cw = children.reduce((s, c) => s + c.w, 0) + Math.max(0, children.length - 1) * HGAP;
-    const ch = children.length ? Math.max(...children.map((c) => c.h)) + VGAP : 0;
-    return { id: a.id, children, grid: false, cols: 0, w: Math.max(NODE_W, cw), h: NODE_H + ch };
+    // Greedily pack child subtrees into rows no wider than MAX_ROW_W.
+    const rows: TreeNode['rows'] = [];
+    for (const c of children) {
+      const row = rows[rows.length - 1];
+      if (row && row.w + HGAP * 2 + c.w <= MAX_ROW_W) {
+        row.items.push(c);
+        row.w += HGAP * 2 + c.w;
+        row.h = Math.max(row.h, c.h);
+      } else rows.push({ items: [c], w: c.w, h: c.h });
+    }
+    const cw = rows.length ? Math.max(...rows.map((r) => r.w)) : 0;
+    const ch = rows.reduce((sum, r) => sum + r.h + VGAP, 0) + Math.max(0, rows.length - 1) * VGAP * 0.5;
+    return { id: a.id, children, grid: false, cols: 0, rows, w: Math.max(NODE_W, cw), h: NODE_H + ch };
   };
 
   const out = new Map<string, { x: number; y: number }>();
@@ -65,11 +78,14 @@ export function layoutAgents(agents: Agent[], teams: Record<string, Team>): Map<
       n.children.forEach((c, i) => out.set(c.id, { x: gx + (i % n.cols) * (NODE_W + HGAP), y: childTop + Math.floor(i / n.cols) * (NODE_H + HGAP + 8) }));
       return;
     }
-    const cw = n.children.reduce((s, c) => s + c.w, 0) + Math.max(0, n.children.length - 1) * HGAP;
-    let x = left + (n.w - cw) / 2;
-    for (const c of n.children) {
-      place(c, x, childTop);
-      x += c.w + HGAP;
+    let top2 = childTop;
+    for (const row of n.rows) {
+      let x = left + (n.w - row.w) / 2;
+      for (const c of row.items) {
+        place(c, x, top2);
+        x += c.w + HGAP * 2;
+      }
+      top2 += row.h + VGAP * 1.5;
     }
   };
 

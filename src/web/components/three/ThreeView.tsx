@@ -84,13 +84,16 @@ function layout3d(agents: Agent[], teams: Record<string, Team>): Map<string, Vec
     const cz = Math.sin(angle) * R;
     const members = byTeam.get(tid) ?? [];
     const lead = members.find((m) => m.id === teams[tid].leadAgentId);
-    members.forEach((m, j) => {
+    members.forEach((m) => {
       if (m === lead) return pos.set(m.id, [cx, 2, cz]);
+      // Members sit on concentric rings (8 per ring) around the team's marker.
       const k = members.filter((x) => x !== lead).indexOf(m);
       const n = members.length - (lead ? 1 : 0);
-      const a2 = angle + ((k - (n - 1) / 2) / Math.max(1, n)) * 1.6;
-      const r2 = 3.2 + (j % 2) * 1.4;
-      pos.set(m.id, [cx + Math.cos(a2) * r2, 2 - depth(m) * 1.6, cz + Math.sin(a2) * r2]);
+      const ring = Math.floor(k / 8);
+      const inRing = Math.min(8, n - ring * 8);
+      const a2 = ((k % 8) / inRing) * Math.PI * 2 + ring * 0.4;
+      const r2 = 2.6 + ring * 1.9;
+      pos.set(m.id, [cx + Math.cos(a2) * r2, 2 - depth(m) * 1.4, cz + Math.sin(a2) * r2]);
     });
   });
   loose.forEach((a, i) => {
@@ -193,13 +196,15 @@ export default function ThreeView() {
     for (const a of act) v.add(new THREE.Vector3(...(positions.get(a.id) ?? [0, 0, 0])));
     return v.divideScalar(act.length);
   }, [agents, positions]);
+  // Camera distance scales with the size of the workforce ring.
+  const ringRadius = Math.max(16, Object.keys(teams).length * 3.2 + 8);
   const labelled = new Set(agents.filter((a) => a.roleId === 'orchestrator' || Object.values(teams).some((t) => t.leadAgentId === a.id)).map((a) => a.id));
 
   return (
     <div className="relative h-full w-full" data-testid="three-view">
-      <Canvas camera={{ position: [0, 22, 34], fov: 50 }} dpr={[1, 1.75]} gl={{ antialias: true, powerPreference: 'high-performance' }} onPointerMissed={() => useStore.getState().select(null)}>
+      <Canvas camera={{ position: [0, ringRadius * 1.25, ringRadius * 2.1], fov: 50 }} dpr={[1, 1.75]} gl={{ antialias: true, powerPreference: 'high-performance' }} onPointerMissed={() => useStore.getState().select(null)}>
         <color attach="background" args={['#05070d']} />
-        <fog attach="fog" args={['#05070d', 40, 110]} />
+        <fog attach="fog" args={['#05070d', ringRadius * 2, ringRadius * 6]} />
         <ambientLight intensity={0.35} />
         <pointLight position={[0, 20, 0]} intensity={600} color="#93c5fd" />
         <pointLight position={[25, 5, -20]} intensity={300} color="#c084fc" />
@@ -227,7 +232,7 @@ export default function ThreeView() {
           <Link3D key={`c-${c.from}-${c.to}-${c.at}`} from={positions.get(c.from)!} to={positions.get(c.to)!} color={TONE_HEX.comm} live />
         ))}
         {agents.map((a) => positions.has(a.id) && <AgentOrb key={a.id} agent={a} position={positions.get(a.id)!} label={labelled.has(a.id)} />)}
-        <OrbitControls ref={controls} enableDamping dampingFactor={0.08} maxDistance={120} minDistance={6} autoRotate={!autoFocus} autoRotateSpeed={0.35} />
+        <OrbitControls ref={controls} enableDamping dampingFactor={0.08} maxDistance={Math.max(120, ringRadius * 5)} minDistance={6} autoRotate={!autoFocus} autoRotateSpeed={0.35} />
         <CameraRig target={activeTarget} enabled={autoFocus} controls={controls} />
       </Canvas>
       <div className="absolute right-4 top-4 flex items-center gap-1.5">

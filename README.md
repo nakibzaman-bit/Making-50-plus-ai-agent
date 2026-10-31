@@ -50,6 +50,7 @@ npm run build && npm start     # serves the built UI and API on :4317
 | **Merge queue** | tests → conflicts → lint → build → integration (main+branch) → approval → merge, step-by-step and live |
 | **Communications** | Direct, team, broadcast, task, system and user messages; message any agent or team |
 | **Resources** | Host and agent CPU/RAM, slots, queue, tokens and cost by model; set MAX AGENTS / CONCURRENT TASKS / CPU / MEMORY |
+| **Scale** | 50+ agents in the Test Lab, about 60 in DEMO, MAX AGENTS up to 1000. The canvas wraps large teams into grids and rows, renders only visible nodes, and switches to large-type cards when zoomed out |
 | **Roles** | 27 built-in roles (orchestrator, PM, architect, frontend … marketing) plus custom roles |
 | **Ctrl + K** | Command palette and global search over agents, tasks, branches, files, commits, messages, errors and projects |
 
@@ -66,11 +67,14 @@ There are two agent runtimes:
 - **Scripted** (`scripted`): LLM-free agents that execute an explicit list of steps (write file,
   run command, commit, message) for real. The NEXUS TEST LAB uses them.
 
-The **NEXUS TEST LAB** has 22 agents in 5 teams with 21 dependent tasks. They build a small JavaScript
-toolkit in parallel worktrees. Along the way you see:
+The **NEXUS TEST LAB** has **54 agents in 7 teams** (Product, Engineering, Data, Simulation, AI, QA,
+DevOps) with **53 dependent tasks**; a debugger joins automatically, for 55. They build a 37-module
+JavaScript toolkit in parallel worktrees, landing 52 branches on `main` in about a minute. Along the way you see:
 
 - real `node --test` runs, commits and merges;
-- a downstream module that imports two other agents' merged work;
+- downstream modules that import other agents' merged work (`ai/eval` ← tokenizer + similarity,
+  `sim/integrator` ← vector2, `sim/timeline` ← the easing module that has to be fixed first);
+- a cross-team regression suite, a secret scanner, a changelog and release notes;
 - a **real bug**: its tests fail, it is retried, fails again, a **debugger agent is auto-spawned on
   the broken branch**, fixes it, and the blocked dependants resume;
 - a security-sensitive merge that **waits for your approval** in the merge queue;

@@ -1,10 +1,11 @@
 import type { ScriptStep } from '../../shared/types.js';
 import type { Services } from '../services.js';
+import { EXTRA_LEADS, EXTRA_MODULES, REGRESSION_TEST, SECRETS_SCANNER } from './testLabModules.js';
 
 export const TEST_LAB_NAME = 'NEXUS TEST LAB';
 
 /**
- * Built-in sample project. ~22 scripted (LLM-free) agents build a small real JavaScript
+ * Built-in sample project. 50+ scripted (LLM-free) agents build a small real JavaScript
  * toolkit in parallel worktrees. Everything that happens is real: files, `node --test`
  * runs, commits, merges, a genuine bug that fails its tests (→ retry → auto-spawned
  * debugger → fix → recovery), a security-sensitive merge that waits for human approval,
@@ -52,7 +53,7 @@ const FILES = {
   perfTest: `import { test } from 'node:test';\nimport assert from 'node:assert/strict';\nimport { benchStore, benchCosine } from '../scripts/bench.js';\n\ntest('store inserts 20k indexed rows under 1s', () => {\n  const r = benchStore();\n  assert.equal(r.found, 1250);\n  assert.ok(r.ms < 1000, 'took ' + r.ms + 'ms');\n});\ntest('cosine similarity stays fast', () => assert.ok(benchCosine().ms < 1000));\n`,
   build: `import { createHash } from 'node:crypto';\nimport { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';\nimport { join } from 'node:path';\n\nconst walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]));\nconst modules = walk('src').filter((f) => f.endsWith('.js')).sort();\nconst manifest = modules.map((f) => ({ file: f, bytes: statSync(f).size, sha256: createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 16) }));\nmkdirSync('dist', { recursive: true });\nwriteFileSync('dist/manifest.json', JSON.stringify({ name: 'nexus-kit', modules: manifest }, null, 2));\nconsole.log('built ' + manifest.length + ' modules → dist/manifest.json');\n`,
   lint: `import { readdirSync, readFileSync, statSync } from 'node:fs';\nimport { join } from 'node:path';\n\nconst walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]));\nlet problems = 0;\nfor (const f of walk('src').filter((x) => x.endsWith('.js'))) {\n  const src = readFileSync(f, 'utf8');\n  if (/\\t/.test(src)) { console.error(f + ': tab character'); problems++; }\n  if (/[ ]+$/m.test(src)) { console.error(f + ': trailing whitespace'); problems++; }\n  if (!/export /.test(src)) { console.error(f + ': no exports'); problems++; }\n}\nconsole.log(problems ? problems + ' problem(s)' : 'lint clean');\nprocess.exit(problems ? 1 : 0);\n`,
-  packageJson: `{\n  "name": "nexus-kit",\n  "version": "0.1.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "test": "node --test",\n    "lint": "node scripts/lint.js",\n    "build": "node scripts/build.js",\n    "bench": "node scripts/bench.js"\n  }\n}\n`,
+  packageJson: `{\n  "name": "nexus-kit",\n  "version": "0.1.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "test": "node --test --experimental-test-isolation=none",\n    "lint": "node scripts/lint.js",\n    "build": "node scripts/build.js",\n    "bench": "node scripts/bench.js"\n  }\n}\n`,
   readme: `# NEXUS Kit\n\nBuilt in parallel by the NEXUS TEST LAB agent workforce — every module on its own branch,\nverified by \`node --test\`, merged through the NEXUS merge queue.\n\n\`\`\`bash\nnpm test        # unit + integration tests\nnpm run lint    # style checks\nnpm run build   # dist/manifest.json\nnpm run bench   # micro-benchmarks\n\`\`\`\n\nModules: core/result, ui/format, ui/easing, ui/contrast, db/store, api/router,\nsecurity/sanitize, auth/token, ai/tokenizer, ai/similarity, ai/eval.\n`,
 };
 
@@ -142,22 +143,52 @@ const TASKS: LabTask[] = [
     script: [w('scripts/bench.js', FILES.bench), w('tests/perf.test.js', FILES.perfTest), pace(600), run('node scripts/bench.js'), run('node --test tests/perf.test.js'), commit('perf: benchmarks with budgets')] },
   { key: 'review', agent: 'review', title: 'Code review of main', description: 'Read-only review: run the suite and inspect history.', after: ['int'],
     script: [run('git log --oneline -n 25'), run('npm test'), say('Review complete: suite green on {{branch}}; no blocking issues found.', 'Test Agent')] },
-  { key: 'ops', agent: 'devops', title: 'Lint, build & release scripts', description: 'package.json scripts, lint and build manifest.', after: ['int', 'perf'], priority: 6,
+  { key: 'ops', agent: 'devops', title: 'Lint, build & release scripts', description: 'package.json scripts, lint and build manifest.', after: ['int', 'perf', 'regression'], priority: 6,
     script: [w('package.json', FILES.packageJson), w('scripts/lint.js', FILES.lint), w('scripts/build.js', FILES.build), w('.gitignore', 'node_modules/\ndist/\n'), pace(500), run('npm run lint'), run('npm run build'), commit('build: lint, build and bench scripts'), { type: 'message', team: true, body: 'Build pipeline ready ({{commit}}): npm run lint && npm run build.' }] },
   { key: 'readme', agent: 'docs', title: 'Project README', description: 'Document the toolkit.', after: ['ops'], priority: 4,
     script: [w('README.md', FILES.readme), pace(500), commit('docs: README')] },
 ];
+
+// ───────── Extended workforce: Data + Simulation teams, more specialists (50+ agents) ─────────
+for (const l of EXTRA_LEADS) {
+  AGENTS.push({ key: l.key, role: l.role, name: l.name, team: l.team, lead: true });
+  TASKS.push({ key: l.key.replace('-lead', '-plan'), agent: l.key, title: l.planTitle, description: 'Split the team’s modules and acceptance tests.', after: l.after, priority: 7,
+    script: [w(l.planFile, l.plan), pace(400), commit(`docs: ${l.team.toLowerCase()} plan`), { type: 'message', team: true, body: `${l.team} plan is up ({{commit}}) — modules are assigned.` }] });
+}
+for (const m of EXTRA_MODULES) {
+  AGENTS.push({ key: m.key, role: m.role, name: m.name, team: m.team, reportsTo: m.reportsTo });
+  const steps: ScriptStep[] = [w(m.file, m.code), w(m.testFile, m.test), pace(300 + (m.key.length % 5) * 120), run(`node --test ${m.testFile}`), commit(`feat: ${m.title.toLowerCase()}`)];
+  if (m.message) steps.push(say(m.message.body, m.message.to, m.message.toRole));
+  TASKS.push({ key: m.key, agent: m.key, title: m.title, description: `${m.file} with tests in ${m.testFile}.`, after: m.after, script: steps });
+}
+AGENTS.push(
+  { key: 'regression', role: 'qa', name: 'Regression Agent', team: 'QA', reportsTo: 'test' },
+  { key: 'secrets', role: 'security', name: 'Secrets Scanner', team: 'DevOps', reportsTo: 'devops' },
+  { key: 'release', role: 'devops', name: 'Release Agent', team: 'DevOps', reportsTo: 'devops' },
+  { key: 'marketing', role: 'marketing', name: 'Marketing Agent', team: 'Product', reportsTo: 'pm' },
+);
+TASKS.push(
+  { key: 'regression', agent: 'regression', title: 'Cross-team regression suite', description: 'Data, simulation, API and AI modules exercised together.', priority: 7,
+    after: ['csv', 'stats', 'lru', 'vector', 'integrator', 'collision', 'ratelimit', 'fuzzy', 'timeline'],
+    script: [w('tests/regression.test.js', REGRESSION_TEST), pace(400), run('node --test tests/regression.test.js'), commit('test: cross-team regression suite'), { type: 'message', team: true, body: 'Regression suite green across Data, Simulation, API and AI ({{commit}}).' }] },
+  { key: 'secrets', agent: 'secrets', title: 'Secret scanning', description: 'Scan the codebase for leaked credentials.', after: ['int', 'regression'], priority: 6,
+    script: [w('scripts/scan-secrets.js', SECRETS_SCANNER), pace(300), run('node scripts/scan-secrets.js'), commit('chore(security): secret scanner')] },
+  { key: 'release', agent: 'release', title: 'Changelog & release', description: 'Compile the changelog from the merged history.', after: ['ops', 'secrets'], priority: 5,
+    script: [run('git log --oneline -n 80'), w('CHANGELOG.md', '# Changelog\n\n## 0.1.0\n\n- 37 modules across UI, data, simulation, API, security, auth and AI\n- unit, integration and regression suites on node:test\n- lint, build, bench and secret-scan scripts\n'), pace(300), commit('docs: changelog for 0.1.0'), say('Release 0.1.0 staged ({{commit}}).', undefined, 'marketing')] },
+  { key: 'marketing', agent: 'marketing', title: 'Release notes', description: 'Announce what the workforce shipped.', after: ['readme', 'release'], priority: 3,
+    script: [w('docs/RELEASE_NOTES.md', '# NEXUS Kit 0.1.0\n\nA dependency-free toolkit built in parallel by more than fifty agents — every module on its own branch, every merge gated by tests.\n'), pace(300), commit('docs: release notes')] },
+);
 
 export async function seedTestLab(s: Services): Promise<string> {
   const existing = s.projects.list().find((p) => p.name === TEST_LAB_NAME);
   if (existing) return existing.id;
   const project = await s.projects.create({
     name: TEST_LAB_NAME,
-    description: '22 scripted agents build a real toolkit in parallel worktrees — real tests, merges, a real bug, a debugger and an approval gate.',
+    description: `${AGENTS.length + 1} scripted agents build a real toolkit in parallel worktrees — real tests, merges, a real bug, a debugger and an approval gate.`,
     objective: 'Build NEXUS Kit: a tested, dependency-free JavaScript toolkit, with every module developed on its own agent branch.',
     settings: {
       defaultRuntime: 'scripted',
-      maxConcurrentTasks: 6,
+      maxConcurrentTasks: 10,
       testCommand: 'npm test',
       lintCommand: 'npm run lint --if-present',
       buildCommand: 'npm run build --if-present',
@@ -167,7 +198,7 @@ export async function seedTestLab(s: Services): Promise<string> {
       autoMerge: true,
     },
     files: {
-      'package.json': '{\n  "name": "nexus-kit",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "test": "node --test"\n  }\n}\n',
+      'package.json': '{\n  "name": "nexus-kit",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "test": "node --test --experimental-test-isolation=none"\n  }\n}\n',
       'README.md': '# NEXUS Kit\n\nScaffold — the agents will fill this in.\n',
       '.gitignore': 'node_modules/\n',
     },
@@ -189,7 +220,14 @@ export async function seedTestLab(s: Services): Promise<string> {
     if (a.lead) s.teams.update(teamIds.get(a.team)!, { leadAgentId: agent.id });
   }
   const taskIds = new Map<string, string>();
-  for (const t of TASKS) {
+  // Insert in dependency order so every referenced task already exists.
+  const known = new Set(TASKS.map((t) => t.key));
+  for (const t of TASKS) for (const k of t.after) if (!known.has(k)) throw new Error(`Test Lab task "${t.key}" depends on unknown task "${k}"`);
+  const pending = [...TASKS];
+  while (pending.length) {
+    const idx = pending.findIndex((t) => t.after.every((k) => taskIds.has(k)));
+    if (idx === -1) throw new Error('Test Lab task graph has a cycle');
+    const t = pending.splice(idx, 1)[0];
     const task = s.tasks.create(
       project.id,
       {

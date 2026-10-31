@@ -18,8 +18,25 @@ export class WsHub {
   private heartbeat: NodeJS.Timeout;
   private unsub: () => void;
 
-  constructor(server: Server, bus: EventBus) {
-    this.wss = new WebSocketServer({ server, path: '/ws', maxPayload: 64 * 1024 });
+  constructor(server: Server, bus: EventBus, authToken: string | null = null) {
+    this.wss = new WebSocketServer({
+      server,
+      path: '/ws',
+      maxPayload: 64 * 1024,
+      verifyClient: ({ req, origin }: { req: import('node:http').IncomingMessage; origin?: string }) => {
+        // Same-origin browsers only (prevents cross-site WebSocket hijacking).
+        if (origin) {
+          try {
+            if (new URL(origin).host !== req.headers.host) return false;
+          } catch {
+            return false;
+          }
+        }
+        if (!authToken) return true;
+        const token = new URL(req.url ?? '/', 'http://x').searchParams.get('token');
+        return token === authToken;
+      },
+    });
     this.wss.on('connection', (ws) => {
       const client: Client = { ws, projectId: null, alive: true };
       this.clients.add(client);
